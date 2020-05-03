@@ -13,17 +13,19 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static(publicDirectoryPath))
 
-let count = 0
-
-// Callback function talks to each client that connects
+// Callback function allows server to talk to each client that is connected
 io.on('connection', (socket) => {
     console.log('New WebSocket connection')
 
-    socket.emit('countUpdated', count)
+    socket.emit('message', 'Welcome!')
+    socket.broadcast.emit('message', 'A new user has joined!')
 
-    socket.on('increment', () => {
-        count++
-        io.emit('countUpdated', count)
+    socket.on('sendMessage', (message) => {
+        io.emit('message', message)
+    })
+
+    socket.on('disconnect', () => {
+        io.emit('message', 'A user has left!')
     })
 })
 
