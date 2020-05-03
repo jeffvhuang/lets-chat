@@ -32,12 +32,13 @@ io.on('connection', (socket) => {
 
         // Send to everyone
         io.emit('message', message)
-        // Send something back to user that sent this originally as acknowledgement
+        // Acknowledgement: Send something back to user to let them know it was successfully received
         callback()
     })
 
-    socket.on('sendLocation', (coords) => {
+    socket.on('sendLocation', (coords, callback) => {
         io.emit('message', `https://google.com/maps?q=${coords.latitude},${coords.longitude}`)
+        callback()
     })
 
     socket.on('disconnect', () => {
