@@ -2,6 +2,7 @@ const express = require('express')
 const path = require('path')
 const http = require('http')
 const socketio = require('socket.io')
+const Filter = require('bad-words')
 
 const app = express();
 const server = http.createServer(app)
@@ -17,11 +18,22 @@ app.use(express.static(publicDirectoryPath))
 io.on('connection', (socket) => {
     console.log('New WebSocket connection')
 
+    // Send only to user who connected
     socket.emit('message', 'Welcome!')
+    // Send to everyone except for the connected user
     socket.broadcast.emit('message', 'A new user has joined!')
 
-    socket.on('sendMessage', (message) => {
+    socket.on('sendMessage', (message, callback) => {
+        const filter = new Filter()
+
+        if (filter.isProfane(message)) {
+            return callback('Profanity is not allowed!')
+        }
+
+        // Send to everyone
         io.emit('message', message)
+        // Send something back to user that sent this originally as acknowledgement
+        callback()
     })
 
     socket.on('sendLocation', (coords) => {
