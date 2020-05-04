@@ -12,8 +12,32 @@ const messageTemplate = document.querySelector('#message-template').innerHTML
 const locationMessageTemplate = document.querySelector('#location-message-template').innerHTML
 const sidebarTemplate = document.querySelector('#sidebar-template').innerHTML
 
-// Options
+//#region Socket communication
 const { username, room } = Qs.parse(location.search, { ignoreQueryPrefix: true })
+
+const autoscroll = () => {
+    // New message element
+    const $newMessage = $messages.lastElementChild
+
+    // Height of the new message
+    const newMessageStyles = getComputedStyle($newMessage)
+    const newMessageMargin = parseInt(newMessageStyles.marginBottom)
+    const newMessageHeight = $newMessage.offsetHeight + newMessageMargin
+
+    // Visible height
+    const visibleHeight = $messages.offsetHeight
+    
+    // Height of messages container (including parts which are not seen - ie. scrollbar is present)
+    const containerHeight = $messages.scrollHeight
+    
+    // How far have I scrolled? There is no scrolBottom so must calculate how far scroll by using scrollTop
+    // .scrollTop is distance the scrollbar is from the top. 0 if at top or when no scrollbar present
+    const scrollOffset = $messages.scrollTop + visibleHeight
+ 
+    if (containerHeight - newMessageHeight <= scrollOffset) {
+        $messages.scrollTop = $messages.scrollHeight
+    }
+}
 
 socket.on('message', (message) => {
     const html = Mustache.render(messageTemplate, {
@@ -22,6 +46,7 @@ socket.on('message', (message) => {
         createdAt: moment(message.createdAt).format('h:mm a')
     })
     $messages.insertAdjacentHTML('beforeend', html)
+    autoscroll()
 })
 
 socket.on('locationMessage', (message) => {
@@ -31,6 +56,7 @@ socket.on('locationMessage', (message) => {
         createdAt: moment(message.createdAt).format('h:mm a')
     })
     $messages.insertAdjacentHTML('beforeend', html)
+    autoscroll()
 })
 
 socket.on('roomData', ({ room, users }) => {
@@ -40,7 +66,9 @@ socket.on('roomData', ({ room, users }) => {
     })
     document.querySelector('#sidebar').innerHTML = html;
 })
+//#endregion socket communciation
 
+//#region event listeners
 $messageForm.addEventListener('submit', (e) => {
     e.preventDefault()
 
@@ -56,8 +84,6 @@ $messageForm.addEventListener('submit', (e) => {
         if (error) {
             return console.log(error)
         }
-
-        console.log('Message delivered')
     })
 })
 
@@ -78,6 +104,7 @@ $sendLocationButton.addEventListener('click', () => {
         })
     })
 })
+//#endregion event listeners
 
 socket.emit('join', { username, room }, (error) => {
     if (error) {
